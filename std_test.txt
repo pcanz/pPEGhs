@@ -1,0 +1,251 @@
+#   Standard Tests
+
+Tags:
+>   use: ...   # compile and use grammar in subsequent match tets
+>   match: ... # parse with previous use: grammar, and report errors
+>   not: ...   # parse and only report an error if it matches
+
+Check quotes and sequence:
+
+    use: s = 'x'
+    match: x
+    use: s = 'x' 'y'
+    match: xy
+    use: s = 'xyz'
+    match: xyz
+    use: s = ''
+    match:
+    use: s = 'x' '' 'y'
+    match: xy
+
+Check alternatives:
+
+    use: s = 'x'/'y'
+    match: x
+    match: y
+    use: s = 'x'/'y'/'z'
+    match: x
+    match: y
+    match: z
+
+Check Repeat:
+
+    use: s = ('x'/'y')*
+    match:
+    match: x
+    match: y
+    match: xy
+    match: xyxyxyyyxx
+    use: s = ('x'/'y'/'z')*
+    match:
+    match: y
+    match: xyz
+    match: yxz
+    match: zzzxxyxzz
+
+    use: s = 'x' 'y'? 'z'
+    match: xyz
+    match: xz
+    use: s = 'x' 'y'+ 'z'
+    match: xyz
+    match: xyyyz
+    use: s = ('x'/'y'/'z')+
+    match: y
+    match: xyyz
+    match: yxz
+    match: zzzxxyxzz
+
+    use: s = ('x'/~'x'*)*
+    match: xxx
+    match: yyy
+    match: xyz
+
+    use: s = 'xy'* 'xz'
+    match: xyxyxz
+    match: xz
+
+    use: s = ('x' 'y')* 'xz'
+    match: xyxyxz
+    match: xz
+
+Check chs char-set:
+
+    use: s = [x]
+    match: x
+    use: s = [x]*
+    match:
+    match: x
+    match: xxxxx
+    use: s = [xyz]
+    match: x
+    match: y
+    match: z
+    use: s = [x-z]*
+    match:
+    match: x
+    match: y
+    match: z
+    match: zzxxyzyx
+
+Rule names:
+
+    use: s = p q   p = 'x'  q = 'y'
+    match: xy
+    use: s = p q   p = 'x'  q = 'y' s*
+    match: xy
+    match: xyxyxy
+
+Lookahead predicates:
+
+    use: s = 'x' !'y' 'z' / 'xy' 'z'
+    match: xz
+    match: xyz
+    use: s = 'x' &[x-z] [a-z]+ / 'x' [0-9] [x-z]
+    match: xyz
+    match: xyabcz
+    match: x9z
+    not: x0a
+    use: s = ~[x-z]
+    match: a
+    not: y
+    use: s = []
+    not:
+    use: s = ~[]
+    match: x
+    use: s = !(~[])
+    match:
+
+Escapes:
+
+    use: s = 'x' '\t' 'y'
+    match: x	y
+    not: x\ty
+    use: s = 'x' '\u0009' 'y'
+    match: x	y
+    use: s = 'x' '\U00000009' 'y'
+    match: x	y
+    not: x\ty
+    use: s = 'x' [\u0009] 'y'
+    match: x	y
+    not: x\ty
+    use: s = 'x' [ \t\n\r]* 'y'
+    match: x
+        y
+    use: s = 'x' ('\n'/'\r' '\n'?) [ \t]* 'y'
+    match: x
+        y
+    use: s = 'x' [\u0009-\u005A]* 'y'
+    match: xABCy
+    match: x	XYZy
+    not: xabcy
+
+UTF-8 characters:
+
+    use: s = '«'
+    match: «
+    use: s = 'x«»x«'
+    match: x«»x«
+    use: s = [«]
+    match: «
+    use: s = [x«y»]+
+    match: y»x«
+
+
+##  Standard pPEG features
+
+Extra features on the core pPEG grammar.
+
+Numeric repeats:
+
+    use: s = 'x'*3
+    not: xx
+    match: xxx
+    not: xxxx
+    use: s = 'x'*3..5
+    not: xx
+    match: xxx
+    match: xxxx
+    match: xxxxx
+    not: xxxxxx
+    use: s = 'x'*3..
+    not: xx
+    match: xxx
+    match: xxxx
+    match: xxxxxxx
+
+Case Insensitive matching:
+
+    use: s = 'abc'i
+    match: abc
+    match: aBc
+    match: ABC
+
+Comments:
+
+    use:
+        # comment ....
+        date  = year '-' month '-' day
+        year  = [0-9]*4
+        month = [0-9]*2  # comment..
+        day   = [0-9]*2
+        # end comment.....
+
+    match: 2022-02-03
+
+Parse pPEG grammar grammar:
+
+    use:
+        # standard pPEG grammar...
+        Peg   = _ rule+ _                         
+        rule  = id _ '=' _ alt                       
+                                                    
+        alt   = seq ('/'_ seq)*                      
+        seq   = rep+                                 
+        rep   = pre sfx? _                           
+        pre   = pfx? term                            
+        term  = call / quote / chars / group / extn  
+        group = '('_ alt ')'                         
+                                                    
+        call  = id _ !'='                 
+        id    = [a-zA-Z_] [a-zA-Z0-9_-]*             
+                                                    
+        pfx   = [~!&]                                
+        sfx   = [+?] / '*' range?                    
+        range = num (dots num?)?                      
+        num   = [0-9]+
+        dots  = '..'                           
+                                                
+        quote = ['] str ['] 'i'?                      
+        str   = ~[']*                                
+        chars = '[' chs ']'                          
+        chs   =  ~']'*                               
+        extn  = '<' ~'>'* '>'                        
+        _     = ([ \t\n\r]+ / '#' ~[\n\r]*)*
+
+    match:
+        # standard pPEG grammar...
+        Peg   = _ rule+ _                         
+        rule  = id _ '=' _ alt                       
+                                                    
+        alt   = seq ('/'_ seq)*                      
+        seq   = rep+                                 
+        rep   = pre sfx? _                           
+        pre   = pfx? term                            
+        term  = call / quote / chars / group / extn  
+        group = '('_ alt ')'                         
+                                                    
+        call  = id _ !'='                 
+        id    = [a-zA-Z_] [a-zA-Z0-9_-]*             
+                                                    
+        pfx   = [~!&]                                
+        sfx   = [+?] / '*' range?                    
+        range = num (dots num?)?                      
+        num   = [0-9]+
+        dots  = '..'                           
+                                                
+        quote = ['] str ['] 'i'?                      
+        str   = ~[']*                                
+        chars = '[' chs ']'                          
+        chs   =  ~']'*                               
+        extn  = '<' ~'>'* '>'                        
+        _     = ([ \t\n\r]+ / '#' ~[\n\r]*)*

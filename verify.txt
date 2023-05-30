@@ -1,0 +1,29 @@
+#   Standard Tests
+
+Tags:
+>   use: ...   # compile and use grammar
+>   match: ... # parse and only report errors
+>   not: ...   # parse and only report an error if it matches
+
+Check quotes and sequence:
+
+    use:  s = 'x'
+    match: x
+    use:  s = 'x' 'y'
+    match: xy
+    use:  s = 'xyz'
+    match: xyz
+    use:  s = ''
+    match:
+    use: s = 'x' '' 'y'
+    match: xy
+
+Check alternatives:
+
+    use:   s = 'x'/'y'
+    match: x
+    match: y
+    use:   s = 'x'/'y'/'z'
+    match: x
+    match: y
+    match: z
