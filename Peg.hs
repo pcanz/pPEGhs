@@ -1,10 +1,20 @@
-module Ppeg where
+module Peg (compile, Parser, Ptree(Elem, Val), Perror) where
 
 import Data.List
 import Data.Char
 import Data.Bits
 
 type Parser = String -> Either Perror Ptree
+
+data Ptree = Val String String | Elem String [Ptree]
+
+instance Show Ptree where
+  show ptree = treeView ptree 0 0 -- ""
+
+data Perror = Perr String Parse
+
+instance Show Perror where
+  show err = showError err
 
 type Parse = (Status, Cursor, Results, Log)
 
@@ -17,11 +27,6 @@ type Results = ([Ptree], Int, [String]) -- ([Ptree], depth, [rules])
 
 type Log = (Int, Op, Results)  -- (pos, expected, Results)
 
-data Ptree = Val String String | Elem String [Ptree]
-
-instance Show Ptree where
-  show ptree = treeView ptree 0 0 -- ""
-
 type Code = [(String, Op)]
 
 data Op = Alt [Op] | Seq [Op]
@@ -30,15 +35,10 @@ data Op = Alt [Op] | Seq [Op]
         | Call Op String | CapCall Op String | Do String
         | Str String | Chs String | Stri String
         | Ext String
-        deriving Eq -- (Show, Eq)
+        -- deriving (Show, Eq)
 
 instance Show Op where
   show op = showOp op
-
-data Perror = Perr String Parse
-
-instance Show Perror where
-  show err = showError err
 
 -- API ----- compile grammar -> parser ----------------------------------------------------------
 
@@ -373,12 +373,6 @@ hexChr hex = chr $ read $ "0x"++hex
 
 -- show op codes as literal source strings ----------------------------
 
--- data Op = Alt [Op] | Seq [Op]
---         | Rep Op Int Int
---         | Not Op | Nan Op | Amp Op
---         | Call Op String | CapCall Op String | Do String
---         | Str String | Chs String | Stri String
-
 showOp :: Op -> String
 showOp (Do rule) = rule
 showOp (Str str) = "'"++(showEsc str)++"'"
@@ -396,9 +390,9 @@ showOp (Stri str) = "'"++(showEsc str)++"'i"
 showOp (Not op) = "!" ++ showOp op
 showOp (Nan op) = "~" ++ showOp op
 showOp (Amp op) = "&" ++ showOp op
+showOp (Ext str) = "<"++(showEsc str)++">"
 
 showEsc str = init $ drop 1 (show str)
-
 
 -- extensions --------------------------------------
 
