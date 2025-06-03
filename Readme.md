@@ -1,6 +1,8 @@
 #   pPEG in Haskell
 
-This is a work in progress. My first Haskell project.
+A proof of concept implementation of [pPEG] in Haskell.
+
+My first Haskell project, lots of fun I like Haskell a lot.
 
 pPEG.hs is a single module with no dependencies (other std lib DATA).
 
@@ -10,6 +12,5 @@ The API has a Peg.compile that takes a pPEG grammar and returns a parser functio
 
 See Json.hs for example.
 
-
-
+I do not plan to maintain this repo, but it may be a good starting point for anyone implementing a similar PEG grammar-parser in Haskell.
 
